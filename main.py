@@ -14,7 +14,7 @@ file.close()
 f = Fernet(crypt_key)
 
 
-@app.get("/generate")
+@app.get("/generate", status_code=201)
 async def read_data(secret: str, code_phrase: str):
     secret_key = secrets.token_urlsafe(64)
 
@@ -42,7 +42,7 @@ async def read_secret(secret_key, code_phrase: str):
         if code_phrase == secret['code_phrase']:
             r.delete(secret_key)
             return secret
-        raise HTTPException(status_code=404, detail="Wrong code_phrase")
+        raise HTTPException(status_code=403, detail="Wrong code_phrase")
     raise HTTPException(status_code=404, detail='Wrong secret key')
 
 

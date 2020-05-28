@@ -9,7 +9,6 @@ verify_ssl = true
 uvicorn = "*"
 fastapi = "*"
 redis = "*"
-passlib = {extras = ["bcrypt"],version = "*"}
 cryptography = "*"
 
 [requires]
