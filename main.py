@@ -1,11 +1,13 @@
 import uvicorn
-import redis
 import secrets
-import pickle
 from cryptography.fernet import Fernet
 from fastapi import FastAPI, HTTPException
+from pymongo import MongoClient
 
-r = redis.Redis(host='localhost', port=6379, db=1)
+client = MongoClient('localhost', 27017)
+db = client.avito_test
+collection = db.secrets
+
 app = FastAPI()
 
 file = open('key.key', 'rb')
@@ -21,10 +23,11 @@ async def read_data(secret: str, code_phrase: str):
     secret = secret.encode()
     code_phrase = code_phrase.encode()
 
-    r.set(secret_key, pickle.dumps({
+    collection.insert_one({
+        'secret_key': secret_key,
         'secret': f.encrypt(secret),
         'code_phrase': f.encrypt(code_phrase)
-    }))
+    })
 
     return {
         "secret_key": secret_key
@@ -33,15 +36,15 @@ async def read_data(secret: str, code_phrase: str):
 
 @app.get("/secrets/{secret_key}")
 async def read_secret(secret_key, code_phrase: str):
-    if r.get(secret_key):
-        secret = pickle.loads(r.get(secret_key))
-
+    secret = collection.find_one({'secret_key': secret_key})
+    if secret:
         for key in secret:
-            secret[key] = f.decrypt(secret[key]).decode()
+            if key == 'secret' or key == 'code_phrase':
+                secret[key] = f.decrypt(secret[key]).decode()
 
         if code_phrase == secret['code_phrase']:
-            r.delete(secret_key)
-            return secret
+            collection.delete_one({'secret_key': secret_key})
+            return secret['secret']
         raise HTTPException(status_code=403, detail="Wrong code_phrase")
     raise HTTPException(status_code=404, detail='Wrong secret key')
 

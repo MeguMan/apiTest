@@ -8,8 +8,8 @@ verify_ssl = true
 [packages]
 uvicorn = "*"
 fastapi = "*"
-redis = "*"
 cryptography = "*"
+pymongo = "*"
 
 [requires]
 python_version = "3.8"
