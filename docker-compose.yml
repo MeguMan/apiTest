@@ -1,0 +1,29 @@
+version: "3.5"
+
+services:
+  mongo:
+    image: mongo
+    restart: always
+    networks:
+      - backend
+    ports:
+      - 27017:27017
+  backend:
+    build: .
+    image: avito-test-2
+    environment:
+      - PORT=80
+      - DB_NAME=avito_test
+      - DB_PORT=27017
+      - DB_HOST=mongo
+    restart: always
+    depends_on:
+      - mongo
+    networks:
+        - backend
+    ports:
+        - 80:80
+
+networks:
+  backend:
+    name: backend_network

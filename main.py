@@ -3,10 +3,25 @@ import secrets
 from cryptography.fernet import Fernet
 from fastapi import FastAPI, HTTPException
 from pymongo import MongoClient
+from pydantic import BaseModel
+import os
 
-client = MongoClient('localhost', 27017)
-db = client.avito_test
-collection = db.secrets
+DATABASE = {
+    'NAME': os.environ.get('DB_NAME', 'SeriesDB'),
+    'HOST': os.environ.get('DB_HOST', 'localhost'),
+    'PORT': int(os.environ.get('DB_PORT', '27017')),
+    'COLLECTION': 'secrets'
+}
+
+
+class Item(BaseModel):
+    secret: str
+    code_phrase: str
+
+
+client = MongoClient(host=DATABASE['HOST'], port=DATABASE['PORT'])
+db = client[DATABASE['NAME']]
+collection = db[DATABASE['COLLECTION']]
 
 app = FastAPI()
 
@@ -16,12 +31,12 @@ file.close()
 f = Fernet(crypt_key)
 
 
-@app.get("/generate", status_code=201)
-async def read_data(secret: str, code_phrase: str):
+@app.post("/generate", status_code=201)
+async def create_item(item: Item):
     secret_key = secrets.token_urlsafe(64)
 
-    secret = secret.encode()
-    code_phrase = code_phrase.encode()
+    secret = item.secret.encode()
+    code_phrase = item.code_phrase.encode()
 
     collection.insert_one({
         'secret_key': secret_key,
@@ -50,4 +65,4 @@ async def read_secret(secret_key, code_phrase: str):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=80)
